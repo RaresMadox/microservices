@@ -22,6 +22,11 @@
 	</properties>
 
 	<dependencies>
+		<dependency>
+		<groupId>org.springframework.cloud</groupId>
+		<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+		<version>4.2.1</version>
+	</dependency>
 		<!-- Dependența principală pentru Spring Cloud Gateway -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
