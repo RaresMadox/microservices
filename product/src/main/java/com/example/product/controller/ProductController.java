@@ -26,10 +26,11 @@ public class ProductController {
     private String userServiceUrl;
 
     @Autowired // Injectează instanța de ProductService
-    public ProductController(ProductService productService, RestTemplate restTemplate) {
+    public ProductController(ProductService productService,RestTemplate restTemplate) {
         this.productService = productService;
         this.restTemplate = restTemplate;
     }
+
     // Endpoint pentru a verifica dacă serviciul rulează
     @GetMapping("/status") // Ex: GET http://localhost:3002/products/status
     public String getStatus() {
@@ -82,7 +83,7 @@ public class ProductController {
         }
     }
 
-    @GetMapping("/user-details/{userId}")
+    @GetMapping("/user-details/{id}")
     public ResponseEntity<User> getUserDetailsFromUserService(@PathVariable String id) {
         System.out.println("GET /products/user-details/" + id + " request received.");
 
