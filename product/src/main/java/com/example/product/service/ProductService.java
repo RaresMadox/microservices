@@ -4,6 +4,7 @@ package com.example.product.service;
 import com.example.product.model.Product;
 import com.example.product.model.User;
 import com.example.product.repository.ProductRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -62,17 +63,17 @@ public class ProductService {
         return productRepository.deleteById(id);
     }
 
+    @CircuitBreaker(name = "userServiceCircuitBreaker", fallbackMethod = "getUserDetailsFallback")
     public Optional<User> getUserDetails(String userId) {
         System.out.println("Calling User Service to get details for user ID: " + userId);
         try {
-            // Construim URL-ul complet pentru endpoint-ul user-service
             String url = userServiceUrl + "/users/" + userId;
-            // Efectuăm apelul GET și mapăm răspunsul la obiectul User
             User user = restTemplate.getForObject(url, User.class);
             return Optional.ofNullable(user);
         } catch (Exception e) {
             System.err.println("Error calling User Service for user ID " + userId + ": " + e.getMessage());
-            return Optional.empty(); // Returnează gol în caz de eroare (ex: utilizator inexistent, serviciu indisponibil)
+            // Circuit Breaker va intercepta această excepție și va apela metoda fallback.
+            throw new RuntimeException("Eroare la apelarea serviciului de utilizatori.", e);
         }
     }
 }

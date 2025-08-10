@@ -5,9 +5,13 @@ import com.example.product.model.Product;
 import com.example.product.model.User;
 import com.example.product.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,12 +21,15 @@ import java.util.Optional;
 public class ProductController {
 
     private final ProductService productService; // Acum injectăm ProductService
+    private final RestTemplate restTemplate;
+    @Value("${user.service.url}")
+    private String userServiceUrl;
 
     @Autowired // Injectează instanța de ProductService
-    public ProductController(ProductService productService) {
+    public ProductController(ProductService productService, RestTemplate restTemplate) {
         this.productService = productService;
+        this.restTemplate = restTemplate;
     }
-
     // Endpoint pentru a verifica dacă serviciul rulează
     @GetMapping("/status") // Ex: GET http://localhost:3002/products/status
     public String getStatus() {
@@ -76,10 +83,17 @@ public class ProductController {
     }
 
     @GetMapping("/user-details/{userId}")
-    public ResponseEntity<User> getUserDetailsFromUserService(@PathVariable String userId) {
-        System.out.println("GET /products/user-details/" + userId + " request received by Product Controller.");
-        Optional<User> user = productService.getUserDetails(userId);
-        return user.map(u -> new ResponseEntity<>(u, HttpStatus.OK))
-                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ResponseEntity<User> getUserDetailsFromUserService(@PathVariable String id) {
+        System.out.println("GET /products/user-details/" + id + " request received.");
+
+        // Simulează o logica de business pentru a lega un produs de un utilizator
+        // În realitate, am avea o bază de date cu relații
+        Product product = productService.getProductById(id).orElse(null);
+        if (product == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        // Metoda principală care poate eșua
+        return this.restTemplate.getForEntity(userServiceUrl + "/users/" + id, User.class);
     }
 }
