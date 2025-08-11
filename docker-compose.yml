@@ -1,0 +1,69 @@
+# Note: The 'version' attribute is now considered obsolete in modern Docker Compose.
+# It is included here for compatibility but can be removed.
+version: '3.8'
+
+services:
+  # The central service discovery server for our microservices.
+  eureka-server:
+    build:
+      context: ./eureka-server  # Assumes your Dockerfile is in the eureka-server directory
+    container_name: eureka-server
+    ports:
+      - "8761:8761"  # Exposes the Eureka dashboard
+    environment:
+      - SERVER_PORT=8761
+    networks:
+      - microservices-network
+
+  # The API Gateway, which handles all incoming requests and routes them to the correct service.
+  api-gateway:
+    build:
+      context: ./api-gateway    # Assumes your Dockerfile is in the api-gateway directory
+    container_name: api-gateway
+    ports:
+      - "8080:8080"  # Exposes the gateway's main port to the host machine
+    environment:
+      # Use the Eureka container name to connect to the discovery server
+      - EUREKA_SERVER_ADDRESS=http://eureka-server:8761/eureka
+      - SERVER_PORT=8080
+    depends_on:
+      - eureka-server  # Ensures Eureka starts before the gateway
+    restart: on-failure
+    networks:
+      - microservices-network
+
+  # An example microservice that the gateway can route to.
+  user-service:
+    build:
+      context: ./user-service   # Assumes your Dockerfile is in the user-service directory
+    container_name: user-service
+    ports:
+      - "8081:8081"  # NOU: Exposes the user-service's port
+    environment:
+      - EUREKA_SERVER_ADDRESS=http://eureka-server:8761/eureka
+      - SERVER_PORT=8081
+    depends_on:
+      - eureka-server
+    restart: on-failure
+    networks:
+      - microservices-network
+
+  # The product microservice
+  product-service:
+    build:
+      context: ./product-service   # Assumes your Dockerfile is in the product-service directory
+    container_name: product-service
+    ports:
+      - "8082:8082"  # NOU: Exposes the product-service's port
+    environment:
+      - EUREKA_SERVER_ADDRESS=http://eureka-server:8761/eureka
+      - SERVER_PORT=8082
+    depends_on:
+      - eureka-server
+    restart: on-failure
+    networks:
+      - microservices-network
+      
+networks:
+  microservices-network:
+    driver: bridge
