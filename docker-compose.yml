@@ -1,44 +1,47 @@
-# Note: The 'version' attribute is now considered obsolete in modern Docker Compose.
-# It is included here for compatibility but can be removed.
+# Folosim versiunea 3.8 pentru o compatibilitate largă cu Docker
 version: '3.8'
 
 services:
-  # The central service discovery server for our microservices.
+  # Serviciul Eureka, centrul de descoperire a serviciilor
   eureka-server:
     build:
-      context: ./eureka-server  # Assumes your Dockerfile is in the eureka-server directory
+      context: ./eureka-server
     container_name: eureka-server
     ports:
-      - "8761:8761"  # Exposes the Eureka dashboard
+      - "8761:8761"
     environment:
       - SERVER_PORT=8761
     networks:
       - microservices-network
+    command: ["java", "-jar", "eureka-server.jar"] # Am adăugat comanda de rulare
 
-  # The API Gateway, which handles all incoming requests and routes them to the correct service.
+  # API Gateway, care rutează cererile și așteaptă toate celelalte servicii
   api-gateway:
     build:
-      context: ./api-gateway    # Assumes your Dockerfile is in the api-gateway directory
+      context: ./api-gateway
     container_name: api-gateway
     ports:
-      - "8080:8080"  # Exposes the gateway's main port to the host machine
+      - "8080:8080"
     environment:
-      # Use the Eureka container name to connect to the discovery server
       - EUREKA_SERVER_ADDRESS=http://eureka-server:8761/eureka
       - SERVER_PORT=8080
+    # Comanda crucială pentru a aștepta celelalte servicii
+    command: ["sh", "-c", "./wait-for-it.sh eureka-server:8761 -- ./wait-for-it.sh user-service:8081 -- ./wait-for-it.sh product-service:8082 -- java -jar api-gateway.jar"]
     depends_on:
-      - eureka-server  # Ensures Eureka starts before the gateway
+      - eureka-server
+      - user-service
+      - product-service
     restart: on-failure
     networks:
       - microservices-network
 
-  # An example microservice that the gateway can route to.
+  # Serviciul pentru utilizatori
   user-service:
     build:
-      context: ./user-service   # Assumes your Dockerfile is in the user-service directory
+      context: ./user-service
     container_name: user-service
     ports:
-      - "8081:8081"  # NOU: Exposes the user-service's port
+      - "8081:8081"
     environment:
       - EUREKA_SERVER_ADDRESS=http://eureka-server:8761/eureka
       - SERVER_PORT=8081
@@ -47,14 +50,15 @@ services:
     restart: on-failure
     networks:
       - microservices-network
+    command: ["sh", "-c", "./wait-for-it.sh eureka-server:8761 -- java -jar user-service.jar"] # Am adăugat așteptare pentru Eureka
 
-  # The product microservice
-  product-service:
+  # Serviciul pentru produse
+  product-service:   
     build:
-      context: ./product-service   # Assumes your Dockerfile is in the product-service directory
+      context: ./product-service
     container_name: product-service
     ports:
-      - "8082:8082"  # NOU: Exposes the product-service's port
+      - "8082:8082"
     environment:
       - EUREKA_SERVER_ADDRESS=http://eureka-server:8761/eureka
       - SERVER_PORT=8082
@@ -63,7 +67,8 @@ services:
     restart: on-failure
     networks:
       - microservices-network
-      
+    command: ["sh", "-c", "./wait-for-it.sh eureka-server:8761 -- java -jar product-service.jar"] # Am adăugat așteptare pentru Eureka
+
 networks:
   microservices-network:
     driver: bridge

@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
-
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @SpringBootApplication(
 		exclude = {
@@ -17,6 +17,7 @@ import org.springframework.web.client.RestTemplate;
 		},
 		scanBasePackages = "com.example.product" // Scanează întregul proiect
 )
+@EnableDiscoveryClient
 public class ProductApplication {
 
 	public static void main(String[] args) {
